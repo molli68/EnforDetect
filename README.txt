@@ -41,3 +41,6 @@ first enter the header/cookies/sesion modify for example:
 
 Cookie: phpseed:asdf3w42r2f2f2f233crebge
 
+Created by : Tiko and Ehood.
+
+
