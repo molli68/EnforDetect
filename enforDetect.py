@@ -14,7 +14,7 @@ from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from subprocess import Popen, PIPE
 import requests
-from tabulate import tabulate# for beutiful printing
+from tabulate import tabulate  # for beutiful printing
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import itertools
@@ -126,46 +126,46 @@ class AutorizetionCMain():
                 d[str(key).lower()]=dict[key]
             return d
         global modifyHEader_static
-        #taking care of the header
-        _modifyHEader=DictToLower(orginalHEader.copy())
-        #for check without 'Cookies'
-        _modifyHEader_without_cookie=DictToLower(orginalHEader.copy())
+        # taking care of the header
+        _modifyHEader = DictToLower(orginalHEader.copy())
+        # for check without 'Cookies'
+        _modifyHEader_without_cookie = DictToLower(orginalHEader.copy())
         try:
             del _modifyHEader_without_cookie['cookie']
-        except :
+        except:
             pass
-        for key in modifyHEader :
-            _modifyHEader[str(key).lower()] =modifyHEader[key]
-        if command =='POST':
-            r1 = requests.post(url, headers=orginalHEader,data=params)
-            r2 = requests.post(url, headers=_modifyHEader,data=params)
-            r3 = requests.post(url, headers=_modifyHEader_without_cookie,data=params)
+        for key in modifyHEader:
+            _modifyHEader[str(key).lower()] = modifyHEader[key]
+        if command == 'POST':
+            r1 = requests.post(url, headers=orginalHEader, data=params)
+            r2 = requests.post(url, headers=_modifyHEader, data=params)
+            r3 = requests.post(url, headers=_modifyHEader_without_cookie, data=params)
         else:
-            r1 = requests.get(url, headers=orginalHEader,params=params)
-            r2 = requests.get(url, headers=_modifyHEader,params=params)
-            r3 = requests.get(url, headers=_modifyHEader_without_cookie,params=params)
+            r1 = requests.get(url, headers=orginalHEader, params=params)
+            r2 = requests.get(url, headers=_modifyHEader, params=params)
+            r3 = requests.get(url, headers=_modifyHEader_without_cookie, params=params)
 
 
         statusWitout=''
         statusModify=''
         if r1.status_code == r3.status_code:
-            if len(r1.content)== len(r3.content):
-                statusWitout=colortext(31, 'BYPASS')
+            if len(r1.content) == len(r3.content):
+                statusWitout = colortext(31, 'BYPASS')
             else:
                 # TODO: posiible added: filters supprot's
                 c_=compare_res(r1.content, r3.content, True)
-                if c_==0:
-                    statusWitout =  colortext(32, 'OK')
-                elif c_==1:
-                    statusWitout =colortext(31, 'BYPASS')
+                if c_ == 0:
+                    statusWitout = colortext(32, 'OK')
+                elif c_ == 1:
+                    statusWitout = colortext(31, 'BYPASS')
                 else:
-                    statusWitout =colortext(33, 'SUSPECTED' + str(c_) + '%rate diffrent')
+                    statusWitout = colortext(33, 'SUSPECTED' + str(c_) + '%rate diffrent')
         else:
-            statusWitout= colortext(32, 'OK')
+            statusWitout = colortext(32, 'OK')
         # the check am self
         if r1.status_code == r2.status_code:
             if len(r1.content) == len(r2.content):
-                statusModify=colortext(31, 'BYPASS')
+                statusModify = colortext(31, 'BYPASS')
             else:
                 # TODO: posiible added: filters supprot's
                 c_ = compare_res(r1.content, r2.content, True)
@@ -179,15 +179,15 @@ class AutorizetionCMain():
             statusModify =  colortext(32, 'OK')
 
         return [statusWitout,statusModify]
-    def printToScreen(self,uri,command,params,statusW,statusM):
-        print "-----------------------------------------\n"
-        print "COMMAND:%s\n"%command
-        print "URI:%s"%uri
-        print "PARAMS:%s\n"%params
-        print "status modified:%s\n"%statusM
-        print "status noCookies%s\n"%statusW
-        print "-----------------------------------------\n"
 
+    def printToScreen(self,uri,command,params,statusW,statusM):
+        print("-----------------------------------------\n")
+        print("COMMAND:%s\n"%command)
+        print("URI:%s"%uri)
+        print("PARAMS:%s\n"%params)
+        print("status modified:%s\n"%statusM)
+        print("status noCookies%s\n"%statusW)
+        print("-----------------------------------------\n")
 
     def mainCheck(self,url,Header,command,params):
         global modifyHEader_static
@@ -273,7 +273,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         conntype = self.headers.get('Proxy-Connection', '')
         if conntype.lower() == 'close':
             self.close_connection = 1
-        elif (conntype.lower() == 'keep-alive' and self.protocol_version >= "HTTP/1.1"):
+        elif conntype.lower() == 'keep-alive' and self.protocol_version >= "HTTP/1.1":
             self.close_connection = 0
 
     def connect_relay(self):
@@ -414,15 +414,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
     def send_cacert(self):
         with open(self.cacert, 'rb') as f:
             data = f.read()
-
         self.wfile.write("%s %d %s\r\n" % (self.protocol_version, 200, 'OK'))
         self.send_header('Content-Type', 'application/x-x509-ca-cert')
         self.send_header('Content-Length', len(data))
         self.send_header('Connection', 'close')
         self.end_headers()
         self.wfile.write(data)
-
-
 
     def request_handler(self, req, req_body):
        pass
@@ -431,10 +428,8 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def save_handler(self, req, req_body, res, res_body):
-
-        #handle the params to dict's
-        params = {}
-        if req_body == None:
+        params = {}  # handle the params to dict's
+        if req_body is None:
             pass
         else:
             for k in req_body.split('&'):
@@ -442,7 +437,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     key, value = k.split('=')
                     params[key] = value
                 except:
-                    print "ERROR IN THE PARAMS REQUEST"
+                    print("ERROR IN THE PARAMS REQUEST")
                     exit(1)
         AutorizetionCMain().mainCheck(req.path, req.headers.__dict__['dict'], str(req.command), params)
 
@@ -459,13 +454,13 @@ def main():
     httpd = ServerClass(server_address, HandlerClass)
 
     sa = httpd.socket.getsockname()
-    print "[+]Serving HTTP Proxy on", sa[0], "port", sa[1], "..."
-    print "enter the modify header:\n"
+    print("[+]Serving HTTP Proxy on", sa[0], "port", sa[1], "...")
+    print("enter the modify header:\n")
     AutorizetionCMain().initilation()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print "force_to_EXIT[maybe keybord]\r\nexit"
+        print("force_to_EXIT[maybe keyboard]\r\nexit")
         exit(1)
 
 if __name__ == '__main__':
