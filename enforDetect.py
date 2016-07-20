@@ -9,17 +9,12 @@ import threading
 import gzip
 import zlib
 import time
-import json
-import re
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 from cStringIO import StringIO
 from subprocess import Popen, PIPE
-from HTMLParser import HTMLParser
 import requests
-# for beutiful printing
-from tabulate import tabulate
-######
+from tabulate import tabulate# for beutiful printing
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import itertools
@@ -31,15 +26,15 @@ diff = 0
 def colortext(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
 # shallow_compare is faster but less accurate
-#for more good messure send in the "shallow_compare" ="False"
+# for more good messure send in the "shallow_compare" ="False"
 def compare_res(res_original, res_modified, shallow_compare):
     global same, diff
     if dictt['content-type'].find('text/html') != -1:
-        soup1 = BeautifulSoup(res_original,"lxml")  # if you pass a string remove the open function
-        soup2 = BeautifulSoup(res_modified,"lxml")  # if you pass a string remove the open function
+        soup1 = BeautifulSoup(res_original, "lxml")  # if you pass a string remove the open function
+        soup2 = BeautifulSoup(res_modified, "lxml")  # if you pass a string remove the open function
         collection1 = soup1.stripped_strings
         collection2 = soup2.stripped_strings
-        if shallow_compare == False:
+        if shallow_compare is False:
             l1 = list(collection1)
             l2 = list(collection2)
             l1_size = len(l1)
@@ -124,7 +119,7 @@ modifyHEader_static = {}
 class AutorizetionCMain():
 
     # 0,3=bypass ,1,4 =unkonwn ,2,5 =enforce( the same and not bypass)
-    def checkBypass(self,url , orginalHEader ,modifyHEader,command,params={}):
+    def checkBypass(self, url, orginalHEader, modifyHEader, command, params={}):
         def DictToLower(dict):
             d={}
             for key in dict:
@@ -137,10 +132,8 @@ class AutorizetionCMain():
         _modifyHEader_without_cookie=DictToLower(orginalHEader.copy())
         try:
             del _modifyHEader_without_cookie['cookie']
-        except:
+        except :
             pass
-
-
         for key in modifyHEader :
             _modifyHEader[str(key).lower()] =modifyHEader[key]
         if command =='POST':
