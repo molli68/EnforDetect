@@ -2,7 +2,7 @@ __author__ = 'ehood'
 
 
 end_chars = [',', ';', '.', r"'", "}", ':', '>', r'"', '\n', '\r']
-start_chars = [',', ';', '.', r"'", '\n', '\r', ':', '<', '{']
+start_chars = [',', ';', '.', r"'", '\n', '\r', ':', '<', '{', r'"']
 
 
 # the function should get the responses without the headers.
