@@ -18,15 +18,20 @@ from tabulate import tabulate  # for beutiful printing
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 import itertools
+import testString
 
 dictt = {'content-type': 'text/html'}
+first_request = 0
+my_csrf_tokes = []
 same = 0
 diff = 0
 
 def colortext(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
+
+
 # shallow_compare is faster but less accurate
-# for more good messure send in the "shallow_compare" ="False"
+# for more good measure send in the "shallow_compare" ="False"
 def compare_res(res_original, res_modified, shallow_compare):
     global same, diff
     if dictt['content-type'].find('text/html') != -1:
@@ -114,90 +119,123 @@ def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
 
+modified_header_static = {}
+class AuthorizationCMain():
 
-modifyHEader_static = {}
-class AutorizetionCMain():
-
-    # 0,3=bypass ,1,4 =unkonwn ,2,5 =enforce( the same and not bypass)
-    def checkBypass(self, url, orginalHEader, modifyHEader, command, params={}):
-        def DictToLower(dict):
-            d={}
-            for key in dict:
-                d[str(key).lower()]=dict[key]
+    @staticmethod
+    def dict_to_lower(dictionary):
+            d = {}
+            for key in dictionary:
+                d[str(key).lower()] = dictionary[key]
             return d
-        global modifyHEader_static
-        # taking care of the header
-        _modifyHEader = DictToLower(orginalHEader.copy())
-        # for check without 'Cookies'
-        _modifyHEader_without_cookie = DictToLower(orginalHEader.copy())
-        try:
-            del _modifyHEader_without_cookie['cookie']
-        except:
-            pass
-        for key in modifyHEader:
-            _modifyHEader[str(key).lower()] = modifyHEader[key]
-        if command == 'POST':
-            r1 = requests.post(url, headers=orginalHEader, data=params)
-            r2 = requests.post(url, headers=_modifyHEader, data=params)
-            r3 = requests.post(url, headers=_modifyHEader_without_cookie, data=params)
-        else:
-            r1 = requests.get(url, headers=orginalHEader, params=params)
-            r2 = requests.get(url, headers=_modifyHEader, params=params)
-            r3 = requests.get(url, headers=_modifyHEader_without_cookie, params=params)
 
+    # 0,3=bypass ,1,4 =unknown ,2,5 =enforce( the same and not bypass)
+    def check_bypass(self, url, original_header, modified_header, command, res_body, params={}):
+        global modified_header_static, first_request, my_csrf_tokes
 
-        statusWitout=''
-        statusModify=''
-        if r1.status_code == r3.status_code:
-            if len(r1.content) == len(r3.content):
-                statusWitout = colortext(31, 'BYPASS')
-            else:
-                # TODO: posiible added: filters supprot's
-                c_=compare_res(r1.content, r3.content, True)
-                if c_ == 0:
-                    statusWitout = colortext(32, 'OK')
-                elif c_ == 1:
-                    statusWitout = colortext(31, 'BYPASS')
+        def del_cookie(mhwc):
+            try:
+                del mhwc['cookie']
+            except:
+                pass
+
+        def replace_cookie(src, dest):
+            for key in src:
+                dest[str(key).lower()] = src[key]
+
+        def check_response(r1, r2, r3):
+            status_without = ''
+            statusModify = ''
+            if r1.status_code == r3.status_code:
+                if len(r1.content) == len(r3.content):
+                    status_without = colortext(31, ' BYPASS')
                 else:
-                    statusWitout = colortext(33, 'SUSPECTED' + str(c_) + '%rate diffrent')
-        else:
-            statusWitout = colortext(32, 'OK')
-        # the check am self
-        if r1.status_code == r2.status_code:
-            if len(r1.content) == len(r2.content):
-                statusModify = colortext(31, 'BYPASS')
+                    c_ = compare_res(r1.content, r3.content, True)  # TODO: possible added: filters support's
+                    if c_ == 0:
+                        status_without = colortext(32, ' OK')
+                    elif c_ == 1:
+                        status_without = colortext(31, ' BYPASS')
+                    else:
+                        status_without = colortext(33, ' SUSPECTED' + str(c_) + '%rate diffrent')
             else:
-                # TODO: posiible added: filters supprot's
-                c_ = compare_res(r1.content, r2.content, True)
-                if c_ == 0:
-                    statusModify = colortext(32, 'OK')
-                elif c_ == 1:
-                    statusModify = colortext(31, 'BYPASS')
+                status_without = colortext(32, ' OK')
+            # the check am self
+            if r1.status_code == r2.status_code:
+                if len(r1.content) == len(r2.content):
+                    statusModify = colortext(31, ' BYPASS')
                 else:
-                    statusModify = colortext(33, 'SUSPECTED' + str(c_) + '%rate diffrent')
+                    # TODO: posiible added: filters supprot's
+                    c_ = compare_res(r1.content, r2.content, True)
+                    if c_ == 0:
+                        statusModify = colortext(32, ' OK')
+                    elif c_ == 1:
+                        statusModify = colortext(31, ' BYPASS')
+                    else:
+                        statusModify = colortext(33, ' SUSPECTED' + str(c_) + '%rate diffrent')
+            else:
+                statusModify = colortext(32, ' OK')
+            return [status_without, statusModify]
+
+         # if this is the first time , we need to add the tokens to the list.
+
+        if first_request == 0:
+            first_request += 1
+
+            _modified_header = AuthorizationCMain.dict_to_lower(original_header.copy())  # taking care of the header
+            _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())  # for check without 'Cookies'
+
+            del_cookie(_modified_header_without_cookie)  # remove the cookie from the req
+            replace_cookie(modified_header, _modified_header)  # replace with user supplied cookies.
+
+            if command == 'POST':
+                r11 = requests.post(url, headers=original_header, data=params)
+                r21 = requests.post(url, headers=_modified_header, data=params)
+                r31 = requests.post(url, headers=_modified_header_without_cookie, data=params)
+            else:
+                r11 = requests.get(url, headers=original_header, params=params)
+                r21 = requests.get(url, headers=_modified_header, params=params)
+                r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
+
+            array_of_tokens = testString.find_diff_str(r11.content, res_body)
+            if array_of_tokens is None:
+                first_request -= 1
+            else:
+                my_csrf_tokes.append(array_of_tokens)
+            return check_response(r11, r21, r31) # check for by pass in the result and print it.
         else:
-            statusModify =  colortext(32, 'OK')
+            _modified_header = AuthorizationCMain.dict_to_lower(original_header.copy())  # taking care of the header
+            _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())  # for check without 'Cookies'
 
-        return [statusWitout,statusModify]
+            del_cookie(_modified_header_without_cookie)  # remove the cookie from the req
+            replace_cookie(modified_header, _modified_header)  # replace with user supplied cookies.
 
-    def printToScreen(self,uri,command,params,statusW,statusM):
+            if command == 'POST':
+                r11 = requests.post(url, headers=original_header, data=params)
+                r21 = requests.post(url, headers=_modified_header, data=params)
+                r31 = requests.post(url, headers=_modified_header_without_cookie, data=params)
+            else:
+                r11 = requests.get(url, headers=original_header, params=params)
+                r21 = requests.get(url, headers=_modified_header, params=params)
+                r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
+
+    def printToScreen(self, uri, command, params, statusW, statusM):
         print("-----------------------------------------\n")
         print("COMMAND:%s\n"%command)
         print("URI:%s"%uri)
         print("PARAMS:%s\n"%params)
         print("status modified:%s\n"%statusM)
-        print("status noCookies%s\n"%statusW)
+        print("status noCookies:%s\n"%statusW)
         print("-----------------------------------------\n")
 
-    def mainCheck(self,url,Header,command,params):
-        global modifyHEader_static
-        check=self.checkBypass(url,Header,modifyHEader_static,command,params)
+    def mainCheck(self, url, Header, command, params, res_body):
+        global modified_header_static
+        check = self.check_bypass(url, Header, modified_header_static, command, res_body, params)
         self.printToScreen(url,command,params,check[0],check[1])
 
     def initilation(self):
-        global modifyHEader_static
-        modifyHEader_static=self.GetHeaderByInput()
-        print tabulate([], ['                DATA               '], tablefmt="orgtbl")
+        global modified_header_static
+        modified_header_static = self.GetHeaderByInput()
+        print(tabulate([], ['                DATA               '], tablefmt="orgtbl"))
 
 
     #ask for input from the user. return dict of headers.
@@ -429,6 +467,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def save_handler(self, req, req_body, res, res_body):
         params = {}  # handle the params to dict's
+        #print "blabla --- ",res_body
         if req_body is None:
             pass
         else:
@@ -439,7 +478,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                 except:
                     print("ERROR IN THE PARAMS REQUEST")
                     exit(1)
-        AutorizetionCMain().mainCheck(req.path, req.headers.__dict__['dict'], str(req.command), params)
+        AuthorizationCMain().mainCheck(req.path, req.headers.__dict__['dict'], str(req.command), params, res_body)
 
 
 def main():
@@ -456,7 +495,7 @@ def main():
     sa = httpd.socket.getsockname()
     print("[+]Serving HTTP Proxy on", sa[0], "port", sa[1], "...")
     print("enter the modify header:\n")
-    AutorizetionCMain().initilation()
+    AuthorizationCMain().initilation()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
