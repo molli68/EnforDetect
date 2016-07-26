@@ -26,6 +26,7 @@ my_csrf_tokes = []
 same = 0
 diff = 0
 
+
 def colortext(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
 
@@ -120,6 +121,8 @@ def similar(a, b):
 
 
 modified_header_static = {}
+
+
 class AuthorizationCMain():
 
     @staticmethod

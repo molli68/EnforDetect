@@ -24,6 +24,38 @@ def find_diff_str(response1, response2):
         return [response1[j+1:i], response2[j+1:i]]
     return None
 
+
+def find_hidden_input(response1, response2):
+    index_of = response1.find(r'input type="hidden"')
+    while index_of != -1:
+        y = 0
+        x = response1.find(r'value="', index_of)
+        j = x
+        if x != -1:
+            y += response1.find(r'"', x+7)
+            if y != -1:
+                while x < y:
+                    if response1[x] != response2[x]:
+                        return [response1[j+7:y], response2[j+7:y]]
+                    x += 1
+        index_of = response1.find(r'input type="hidden"', index_of+1)
+    return None
+
+
+r21 = """<form action="/transfer.do" method="post">
+  <input type="hidden" name="CSRFToken"
+  value="OWY4NmQwODE4ODRjN2Q2NTlhMmZlYWE
+  wYzU1YWQwMTVhM2JmNGYxYjJiMGI4MjJjZDE1ZDZ
+  MGYwMGEwOA==">
+  </form>"""
+r22 = """<form action="/transfer.do" method="post">
+  <input type="hidden" name="CSRFToken"
+  value="OWY4NmQwODE3ODRjN2Q2NTlhMmZlYWE
+  wYzU1YWQwMTVhM2JmNGYxYjJiMGI4MjJjZDE1ZDZ
+  MGYwMGEwOA==">
+  </form>"""
+
+
 r1 = """HTTP/1.1 200 OK
 server: Apache/2.4.7 (Ubuntu)
 x-powered-by: PHP/5.5.9-1ubuntu4.17
@@ -53,4 +85,6 @@ X-BACKEND: apps-proxy
 Connection: close
 {"wp-auth-check":true,"server_time":1469437142}"""
 
-print(find_diff_str(response1=r1, response2=r2))
+#print(find_diff_str(response1=r1, response2=r2))
+
+print(find_hidden_input(r21, r22))
