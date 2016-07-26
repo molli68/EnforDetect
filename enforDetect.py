@@ -25,7 +25,7 @@ first_request = 0
 my_csrf_tokes = []
 same = 0
 diff = 0
-
+hidden_input = False  # specify if we first check for hidden form.
 
 def colortext(c, s):
     return "\x1b[%dm%s\x1b[0m" % (c, s)
@@ -134,7 +134,7 @@ class AuthorizationCMain():
 
     # 0,3=bypass ,1,4 =unknown ,2,5 =enforce( the same and not bypass)
     def check_bypass(self, url, original_header, modified_header, command, res_body, params={}):
-        global modified_header_static, first_request, my_csrf_tokes
+        global modified_header_static, first_request, my_csrf_tokes, hidden_input
 
         def del_cookie(mhwc):
             try:
@@ -179,13 +179,14 @@ class AuthorizationCMain():
                 statusModify = colortext(32, ' OK')
             return [status_without, statusModify]
 
-         # if this is the first time , we need to add the tokens to the list.
+        # if this is the first time , we need to add the tokens to the list.
 
         if first_request == 0:
             first_request += 1
 
             _modified_header = AuthorizationCMain.dict_to_lower(original_header.copy())  # taking care of the header
-            _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())  # for check without 'Cookies'
+            # for check without 'Cookies'
+            _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())
 
             del_cookie(_modified_header_without_cookie)  # remove the cookie from the req
             replace_cookie(modified_header, _modified_header)  # replace with user supplied cookies.
@@ -199,14 +200,25 @@ class AuthorizationCMain():
                 r21 = requests.get(url, headers=_modified_header, params=params)
                 r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
 
-            array_of_tokens = testString.find_diff_str(r11.content, res_body)
-            if array_of_tokens is None:
-                first_request -= 1
+            if hidden_input:
+                array_of_tokens = testString.find_hidden_input(r11.content, res_body)
+                if array_of_tokens is None:
+                    array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                    if array_of_tokens is not None:
+                        my_csrf_tokes.append(array_of_tokens)
+                    else:
+                        first_request -= 1
+                else:
+                    my_csrf_tokes.append(array_of_tokens)
             else:
-                my_csrf_tokes.append(array_of_tokens)
+                array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                if array_of_tokens is None:
+                    first_request -= 1
+                else:
+                    my_csrf_tokes.append(array_of_tokens)
             return check_response(r11, r21, r31)  # check for by pass in the result and print it.
-        else:
 
+        else:
             _modified_header = AuthorizationCMain.dict_to_lower(original_header.copy())  # taking care of the header
             _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())  # for check without 'Cookies'
 
@@ -227,14 +239,23 @@ class AuthorizationCMain():
                             r11 = requests.get(url, headers=original_header, params=params)
                             r21 = requests.get(url, headers=_modified_header, params=params)
                             r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
-                        array_of_tokens = testString.find_diff_str(r11.content, res_body)
-                        if array_of_tokens is not None:
-                            my_csrf_tokes.append(array_of_tokens)
+                        if hidden_input:
+                            array_of_tokens = testString.find_hidden_input(r11.content, res_body)
+                            if array_of_tokens is None:
+                                array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                                if array_of_tokens is not None:
+                                    my_csrf_tokes.append(array_of_tokens)
+                            else:
+                                my_csrf_tokes.append(array_of_tokens)
+                        else:
+                            array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                            if array_of_tokens is not None:
+                                my_csrf_tokes.append(array_of_tokens)
 
                         a = check_response(r11, r21, r31)  # check for by pass in the result and print it.
                         if a[0] == colortext(32, ' OK'):
                             return a
-            if i == 0:
+            if i == 0:  # this mean that we didn't find any tokens.
                 if command == 'POST':
                     r11 = requests.post(url, headers=original_header, data=params)
                     r21 = requests.post(url, headers=_modified_header, data=params)
@@ -243,9 +264,18 @@ class AuthorizationCMain():
                     r11 = requests.get(url, headers=original_header, params=params)
                     r21 = requests.get(url, headers=_modified_header, params=params)
                     r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
-                array_of_tokens = testString.find_diff_str(r11.content, res_body)
-                if array_of_tokens is not None:
-                    my_csrf_tokes.append(array_of_tokens)
+                if hidden_input:
+                    array_of_tokens = testString.find_hidden_input(r11.content, res_body)
+                    if array_of_tokens is None:
+                        array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                        if array_of_tokens is not None:
+                            my_csrf_tokes.append(array_of_tokens)
+                    else:
+                        my_csrf_tokes.append(array_of_tokens)
+                else:
+                    array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                    if array_of_tokens is not None:
+                        my_csrf_tokes.append(array_of_tokens)
                 return check_response(r11, r21, r31)  # check for by pass in the result and print it.
 
     def printToScreen(self, uri, command, params, statusW, statusM):
