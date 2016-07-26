@@ -210,26 +210,40 @@ class AuthorizationCMain():
             del_cookie(_modified_header_without_cookie)  # remove the cookie from the req
             replace_cookie(modified_header, _modified_header)  # replace with user supplied cookies.
 
+            i = 0  # flag , did we find any match in tokens.
             for arr in my_csrf_tokes:
                 for key, value in params.iteritems():
                     if value == arr[0]:
                         params[key] = arr[1]
+                        i += 1
+                        if command == 'POST':
+                            r11 = requests.post(url, headers=original_header, data=params)
+                            r21 = requests.post(url, headers=_modified_header, data=params)
+                            r31 = requests.post(url, headers=_modified_header_without_cookie, data=params)
+                        else:
+                            r11 = requests.get(url, headers=original_header, params=params)
+                            r21 = requests.get(url, headers=_modified_header, params=params)
+                            r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
+                        array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                        if array_of_tokens is not None:
+                            my_csrf_tokes.append(array_of_tokens)
 
-            if command == 'POST':
-                r11 = requests.post(url, headers=original_header, data=params)
-                r21 = requests.post(url, headers=_modified_header, data=params)
-                r31 = requests.post(url, headers=_modified_header_without_cookie, data=params)
-            else:
-                r11 = requests.get(url, headers=original_header, params=params)
-                r21 = requests.get(url, headers=_modified_header, params=params)
-                r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
-
-            array_of_tokens = testString.find_diff_str(r11.content, res_body)
-            if array_of_tokens is not None:
-                my_csrf_tokes.append(array_of_tokens)
-
-            return check_response(r11, r21, r31)  # check for by pass in the result and print it.
-
+                        a = check_response(r11, r21, r31)  # check for by pass in the result and print it.
+                        if a[0] == colortext(32, ' OK'):
+                            return a
+            if i == 0:
+                if command == 'POST':
+                    r11 = requests.post(url, headers=original_header, data=params)
+                    r21 = requests.post(url, headers=_modified_header, data=params)
+                    r31 = requests.post(url, headers=_modified_header_without_cookie, data=params)
+                else:
+                    r11 = requests.get(url, headers=original_header, params=params)
+                    r21 = requests.get(url, headers=_modified_header, params=params)
+                    r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
+                array_of_tokens = testString.find_diff_str(r11.content, res_body)
+                if array_of_tokens is not None:
+                    my_csrf_tokes.append(array_of_tokens)
+                return check_response(r11, r21, r31)  # check for by pass in the result and print it.
 
     def printToScreen(self, uri, command, params, statusW, statusM):
         print("-----------------------------------------\n")
@@ -245,7 +259,7 @@ class AuthorizationCMain():
         check = self.check_bypass(url, Header, modified_header_static, command, res_body, params)
         self.printToScreen(url,command,params,check[0],check[1])
 
-    def initilation(self):
+    def initialization(self):
         global modified_header_static
         modified_header_static = self.GetHeaderByInput()
         print(tabulate([], ['                DATA               '], tablefmt="orgtbl"))
@@ -508,7 +522,7 @@ def main():
     sa = httpd.socket.getsockname()
     print("[+]Serving HTTP Proxy on", sa[0], "port", sa[1], "...")
     print("enter the modify header:\n")
-    AuthorizationCMain().initilation()
+    AuthorizationCMain().initialization()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
