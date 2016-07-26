@@ -201,13 +201,19 @@ class AuthorizationCMain():
                 first_request -= 1
             else:
                 my_csrf_tokes.append(array_of_tokens)
-            return check_response(r11, r21, r31) # check for by pass in the result and print it.
+            return check_response(r11, r21, r31)  # check for by pass in the result and print it.
         else:
+
             _modified_header = AuthorizationCMain.dict_to_lower(original_header.copy())  # taking care of the header
             _modified_header_without_cookie = AuthorizationCMain.dict_to_lower(original_header.copy())  # for check without 'Cookies'
 
             del_cookie(_modified_header_without_cookie)  # remove the cookie from the req
             replace_cookie(modified_header, _modified_header)  # replace with user supplied cookies.
+
+            for arr in my_csrf_tokes:
+                for key, value in params.iteritems():
+                    if value == arr[0]:
+                        params[key] = arr[1]
 
             if command == 'POST':
                 r11 = requests.post(url, headers=original_header, data=params)
@@ -217,6 +223,13 @@ class AuthorizationCMain():
                 r11 = requests.get(url, headers=original_header, params=params)
                 r21 = requests.get(url, headers=_modified_header, params=params)
                 r31 = requests.get(url, headers=_modified_header_without_cookie, params=params)
+
+            array_of_tokens = testString.find_diff_str(r11.content, res_body)
+            if array_of_tokens is not None:
+                my_csrf_tokes.append(array_of_tokens)
+
+            return check_response(r11, r21, r31)  # check for by pass in the result and print it.
+
 
     def printToScreen(self, uri, command, params, statusW, statusM):
         print("-----------------------------------------\n")
